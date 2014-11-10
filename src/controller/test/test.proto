@@ -59,7 +59,7 @@ message MediaServerReq {
         DetachFromMixer = 14;
 
         CreateVideoMix = 15;
-
+        AttachEndPoint = 16;
     }
 
     required CommandType command = 1;

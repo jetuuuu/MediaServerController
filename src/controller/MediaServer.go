@@ -3,13 +3,8 @@ package controller
 import proto "code.google.com/p/goprotobuf/proto"
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"net"
-	"strconv"
-	"strings"
 	"./test"
 )
 
@@ -24,55 +19,57 @@ type MediaServer struct {
 func (this *MediaServer) Start() {
 	//TODO: добавить повторную попытку создать VideoMix
 	response := this.createVideoMix()
-	fmt.Println("mixer id:", response.GetId())
-	endpointID := this.createEndPoint()
-	fmt.Println("endpoint id:", endpointID)
-	this.attachEndPoint(mixerID, endpointID)
+	if response == nil {
+		//TODO: повторная попытка
+	}
+	mixer_id := response.GetId()
+	fmt.Println("mixer id:", mixer_id)
+	response = this.createEndPoint()
+	if response == nil {
+		//TODO: повторная попытка
+	}
+	endpoint_id := response.GetId()
+	fmt.Println("endpoint id:", response.GetId())
+	this.attachEndPoint(mixer_id, endpoint_id)
 	this.connect.Close()
 }
 
 func (this *MediaServer) createVideoMix() *test.MediaServerRep {
 	response, err := this.sendRequest(&test.MediaServerReq{
-		Command: test.ServerRequest_CreateVideoMix.Enum(),
+		Command: test.MediaServerReq_CreateVideoMix.Enum(),
 	})
 
 	if err != nil {
 		panic("Protobuf panic")
 	}
 
-	//ждем ответа от сервера с id микшера
-	return rand.Intn(100)
+	return response
 }
-
-func (this *MediaServer) attachEndPoint(mixerID int, endpointID int) *test.MediaServerRep {
-	err := this.sendRequest(&test.MediaServerReq{
-		Command: test.ServerRequest_AttachEndPoint.Enum(),
-		Params:  []string{strconv.Itoa(mixerID), strconv.Itoa(endpointID)},
+//TODO:уточнить по поводу того, как передавать id endpoint'a
+func (this *MediaServer) attachEndPoint(mixer_id string, endpoint_id string) *test.MediaServerRep {
+	response, err := this.sendRequest(&test.MediaServerReq{
+		Command: test.MediaServerReq_AttachEndPoint.Enum(),
+		Params:  []string{mixer_id, endpoint_id},
 	})
 
 	if err != nil {
-		panic("Protobuf panic")
+		fmt.Println("Protobuf panic")
+		return nil
 	}
+
+	return response
 }
 
 func (this *MediaServer) createEndPoint() *test.MediaServerRep {
-	ip := this.connect.LocalAddr().String()
-
-	err := this.sendRequest(&test.MediaServerReq{
-		Command: test.ServerRequest_CreateEndPoint.Enum(),
-		Sdp: &test.SDP{
-			V: proto.String("0\n"),
-			O: proto.String(this.getID(ip) + " 0 IN IP4 " + strings.Split(ip, ":")[0] + "\n"),
-			C: proto.String("IN IP4 " + strings.Split(ip, ":")[0] + "\n"),
-			M: proto.String("video " + strings.Split(ip, ":")[1] + " RTP/AVP\n"),
-		},
+	response, err := this.sendRequest(&test.MediaServerReq{
+		Command: test.MediaServerReq_CreateEndPoint.Enum(),
 	})
 
 	if err != nil {
-		panic("Protobuf panic")
+		fmt.Println("Protobuf panic")
 	}
 
-	return rand.Intn(100)
+	return response
 }
 
 func (this *MediaServer) sendRequest(request *test.MediaServerReq) (*test.MediaServerRep, error) {
@@ -94,12 +91,11 @@ func (this *MediaServer) getMediaServerRep() *test.MediaServerRep {
 		fmt.Println("Cann't read server response. ", this.connect.LocalAddr().Network())
 		return nil
 	}
-	response := new(MediaServerRep)
-	return proto.Unmarshal(buff[0: n], response)
-}
-
-func (this *MediaServer) getID(ip string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(ip))
-	return hex.EncodeToString(hasher.Sum(nil))
+	response := new(test.MediaServerRep)
+	err = proto.Unmarshal(buff[0: n], response)
+	if err != nil {
+		fmt.Println("Protobuf error unmarshal")
+		return nil
+	}
+	return response
 }
