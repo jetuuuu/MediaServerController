@@ -31,6 +31,6 @@ func (this *MediaServerController) Start() {
 func handleRequest(connection net.Conn) {
 	fmt.Println(connection.LocalAddr().String())
 	ms := new(MediaServer)
-	ms.connect = connection
+	ms.connectUser = connection
 	ms.Start()
 }

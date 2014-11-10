@@ -13,7 +13,8 @@ const (
 )
 
 type MediaServer struct {
-	connect net.Conn
+	connectUser net.Conn
+	connectServer net.Conn
 }
 
 func (this *MediaServer) Start() {
@@ -29,9 +30,27 @@ func (this *MediaServer) Start() {
 		//TODO: повторная попытка
 	}
 	endpoint_id := response.GetId()
+	localMedia := this.getEndPointMedia(&endpoint_id)
+
+	this.connectUser.Write([]byte(localMedia.GetIp()))
+	
 	fmt.Println("endpoint id:", response.GetId())
 	this.attachEndPoint(mixer_id, endpoint_id)
-	this.connect.Close()
+	this.connectUser.Close()
+	this.connectServer.Close()
+}
+
+func (this *MediaServer) getEndPointMedia(endpoint_id *string) *test.Media {
+	response, err := this.sendRequest(&test.MediaServerReq{
+		Command: test.MediaServerReq_GetEndPointMedia.Enum(),
+		Id: endpoint_id,
+	})
+
+	if err != nill {
+		fmt.Println(err)
+	}
+
+	return response.GetMedia()
 }
 
 func (this *MediaServer) createVideoMix() *test.MediaServerRep {
@@ -40,7 +59,7 @@ func (this *MediaServer) createVideoMix() *test.MediaServerRep {
 	})
 
 	if err != nil {
-		panic("Protobuf panic")
+		fmt.Println(err)
 	}
 
 	return response
@@ -53,7 +72,7 @@ func (this *MediaServer) attachEndPoint(mixer_id string, endpoint_id string) *te
 	})
 
 	if err != nil {
-		fmt.Println("Protobuf panic")
+		fmt.Println(err)
 		return nil
 	}
 
@@ -66,7 +85,7 @@ func (this *MediaServer) createEndPoint() *test.MediaServerRep {
 	})
 
 	if err != nil {
-		fmt.Println("Protobuf panic")
+		fmt.Println(err)
 	}
 
 	return response
@@ -78,17 +97,17 @@ func (this *MediaServer) sendRequest(request *test.MediaServerReq) (*test.MediaS
 		return nil, err
 	}
 
-	this.connect.Write(data)
+	this.connectServer.Write(data)
 
-	return this.getMediaServerRep(),nil
+	return this.getMediaServerRep(), nil
 }
 
 func (this *MediaServer) getMediaServerRep() *test.MediaServerRep {
 	//TODO: так же добавить возможность повторного запроса
 	buff := make([]byte, BUFFSIZE)
-	n, err := this.connect.Read(buff)
+	n, err := this.connectServer.Read(buff)
 	if err != nil {
-		fmt.Println("Cann't read server response. ", this.connect.LocalAddr().Network())
+		fmt.Println("Cann't read server response. ", this.connectServer.LocalAddr().Network())
 		return nil
 	}
 	response := new(test.MediaServerRep)
