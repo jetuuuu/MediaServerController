@@ -1,0 +1,20 @@
+package test;
+
+message SDP {
+    required string v = 1;
+    required string o = 2;
+    required string c = 3;
+    required string m = 4;
+}
+
+message ServerRequest {
+    enum Commands {
+        CreateEndPoint = 1;
+        CreateVideoMix = 2;
+        AttachEndPoint = 3;
+        DeattachEndPoint = 4;
+    }
+    required Commands Command = 1;
+    optional SDP sdp = 2;
+    repeated string Params = 3;
+}
