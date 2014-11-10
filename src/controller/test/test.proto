@@ -1,20 +1,82 @@
 package test;
 
-message SDP {
-    required string v = 1;
-    required string o = 2;
-    required string c = 3;
-    required string m = 4;
+message Media {
+    enum MediaType {
+        Audio = 1;
+        Video = 2;
+    }
+    required MediaType media = 1 [default = Audio];
+    required string ip = 2;
+
+    enum MediaProtocol {
+        RTP_AVP = 1;
+        RTP_SAVP = 2;
+        RTP_AVPF = 3;
+        RTP_SAVPF = 4;
+    }
+    required MediaProtocol protocol = 3;
+
+    enum MediaDirection {
+        Sendrecv = 1;
+        Recvonly = 2;
+        Sendonly = 3;
+        Inactive = 4;
+    }
+    optional MediaDirection direction = 4 [default = Sendrecv];
+
+    //repeated Attribute attrList = 5;
+
+    message Codec {
+        required string id = 1;
+        required string name = 2;
+        optional string format = 3;
+    }
+    repeated Codec codecList = 6;
 }
 
-message ServerRequest {
-    enum Commands {
+message MediaServerReq {
+    enum CommandType {
         CreateEndPoint = 1;
-        CreateVideoMix = 2;
-        AttachEndPoint = 3;
-        DeattachEndPoint = 4;
+        GetEndPointMedia = 2;
+        UpdateEndPointMedia = 3;
+        SendDTMF = 4;
+
+        SetReceiver = 5;
+        ResetReceiver = 6;
+
+        DestroyObject = 7;
+
+        CreatePlayer = 8;
+
+        CreateRecorder = 9;
+
+        CreateTranscoder = 10;
+
+        CreateSRTP = 11;
+
+        CreateMixer = 12;
+        AttachToMixer = 13;
+        DetachFromMixer = 14;
+
+        CreateVideoMix = 15;
+
     }
-    required Commands Command = 1;
-    optional SDP sdp = 2;
-    repeated string Params = 3;
+
+    required CommandType command = 1;
+    optional string id = 2;
+    optional Media media = 3;
+    repeated string params = 4;
+}
+
+message MediaServerRep {
+    enum Result {
+        OK = 200;
+        NotFound = 404;
+        InternalServerError = 500;
+        NotImplemented = 501;
+    }
+    required Result res = 1;
+    optional string id = 2;
+    optional Media media = 3;
+    optional string description = 4;
 }
