@@ -19,7 +19,10 @@ type MediaServer struct {
 }
 
 func (this *MediaServer) Start() {
-	this.connectToServer("0.0.0.0", "4000")
+	err := this.connectToServer("0.0.0.0", "4000")
+	if err != nil {
+		return
+	}
 	go this.waitClose()
 
 	response := this.createVideoMix()
@@ -38,7 +41,7 @@ func (this *MediaServer) Start() {
 	fmt.Println("endpoint id:", response.GetId())
 
 	localMedia := this.getEndPointMedia(&endpoint_id)
-	_, err := this.connectUser.Write([]byte(localMedia.GetIp()))
+	_, err = this.connectUser.Write([]byte(localMedia.GetIp()))
 	if err != nil {
 		this.connectUser.Close()
 		this.detachEndPoint()
@@ -86,8 +89,33 @@ func (this *MediaServer) connectToServer(ip string, port string) error {
 	if err != nil {
 		return err
 	}
-	this.connectServer = connection
+	buff := make([]byte, 1024)
+	n, err := connection.Read(buff)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	ipPort := string(buff[:n])
+	this.connectServer, err = net.Dial("tcp", ipPort)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	go checkServerConnection(connection)
+
 	return nil
+}
+
+func checkServerConnection(connect net.Conn) {
+	for {
+		buff := make([]byte, BUFFSIZE)
+		_, err := connect.Read(buff)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+	}
 }
 
 func (this *MediaServer) getEndPointMedia(endpoint_id *string) *test.Media {
