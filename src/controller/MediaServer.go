@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"./test"
+	"time"
 )
 
 const (
@@ -18,26 +19,75 @@ type MediaServer struct {
 }
 
 func (this *MediaServer) Start() {
-	//TODO: добавить повторную попытку создать VideoMix
+	this.connectToServer("0.0.0.0", "4000")
+	go this.waitClose()
+
 	response := this.createVideoMix()
 	if response == nil {
-		//TODO: повторная попытка
+		fmt.Println("VideoMix can not be created.", this.connectUser.LocalAddr().String())
 	}
+
 	mixer_id := response.GetId()
 	fmt.Println("mixer id:", mixer_id)
+
 	response = this.createEndPoint()
 	if response == nil {
-		//TODO: повторная попытка
+		fmt.Println("EndPoint can not be created.", this.connectUser.LocalAddr().String())
 	}
 	endpoint_id := response.GetId()
-	localMedia := this.getEndPointMedia(&endpoint_id)
-
-	this.connectUser.Write([]byte(localMedia.GetIp()))
-	
 	fmt.Println("endpoint id:", response.GetId())
+
+	localMedia := this.getEndPointMedia(&endpoint_id)
+	_, err := this.connectUser.Write([]byte(localMedia.GetIp()))
+	if err != nil {
+		this.connectUser.Close()
+		this.detachEndPoint()
+		return
+	}
+
 	this.attachEndPoint(mixer_id, endpoint_id)
-	this.connectUser.Close()
-	this.connectServer.Close()
+	this.setReceiver(endpoint_id, mixer_id);
+
+	//this.connectUser.Close()
+	//this.connectServer.Close()
+}
+
+func (this *MediaServer) waitClose() {
+	for {
+		_, err := this.connectUser.Write([]byte("~"))
+		if err != nil {
+			this.connectUser.Close()
+			this.detachEndPoint()
+			break
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func (this *MediaServer) detachEndPoint() {
+	fmt.Println("detachEndPoint")
+}
+
+func (this *MediaServer) setReceiver(endpoint_id string, mixer_id string) {
+	_, err := this.sendRequest(&test.MediaServerReq{
+		Command: test.MediaServerReq_SetReceiver.Enum(),
+		Id: &endpoint_id,
+		Params: []string{mixer_id},
+	})
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}
+
+func (this *MediaServer) connectToServer(ip string, port string) error {
+	connection, err := net.Dial("tcp", ip + ":" + port)
+	if err != nil {
+		return err
+	}
+	this.connectServer = connection
+	return nil
 }
 
 func (this *MediaServer) getEndPointMedia(endpoint_id *string) *test.Media {
@@ -46,7 +96,7 @@ func (this *MediaServer) getEndPointMedia(endpoint_id *string) *test.Media {
 		Id: endpoint_id,
 	})
 
-	if err != nill {
+	if err != nil {
 		fmt.Println(err)
 	}
 
@@ -68,7 +118,8 @@ func (this *MediaServer) createVideoMix() *test.MediaServerRep {
 func (this *MediaServer) attachEndPoint(mixer_id string, endpoint_id string) *test.MediaServerRep {
 	response, err := this.sendRequest(&test.MediaServerReq{
 		Command: test.MediaServerReq_AttachEndPoint.Enum(),
-		Params:  []string{mixer_id, endpoint_id},
+		Id: &endpoint_id,
+		Params:  []string{mixer_id},
 	})
 
 	if err != nil {
@@ -103,7 +154,6 @@ func (this *MediaServer) sendRequest(request *test.MediaServerReq) (*test.MediaS
 }
 
 func (this *MediaServer) getMediaServerRep() *test.MediaServerRep {
-	//TODO: так же добавить возможность повторного запроса
 	buff := make([]byte, BUFFSIZE)
 	n, err := this.connectServer.Read(buff)
 	if err != nil {

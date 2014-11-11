@@ -152,6 +152,7 @@ const (
 	MediaServerReq_DetachFromMixer     MediaServerReq_CommandType = 14
 	MediaServerReq_CreateVideoMix      MediaServerReq_CommandType = 15
 	MediaServerReq_AttachEndPoint      MediaServerReq_CommandType = 16
+	MediaServerReq_DetachEndPoint      MediaServerReq_CommandType = 17
 )
 
 var MediaServerReq_CommandType_name = map[int32]string{
@@ -171,6 +172,7 @@ var MediaServerReq_CommandType_name = map[int32]string{
 	14: "DetachFromMixer",
 	15: "CreateVideoMix",
 	16: "AttachEndPoint",
+	17: "DetachEndPoint",
 }
 var MediaServerReq_CommandType_value = map[string]int32{
 	"CreateEndPoint":      1,
@@ -189,6 +191,7 @@ var MediaServerReq_CommandType_value = map[string]int32{
 	"DetachFromMixer":     14,
 	"CreateVideoMix":      15,
 	"AttachEndPoint":      16,
+	"DetachEndPoint":      17,
 }
 
 func (x MediaServerReq_CommandType) Enum() *MediaServerReq_CommandType {

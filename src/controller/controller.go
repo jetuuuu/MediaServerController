@@ -14,7 +14,7 @@ type MediaServerController struct {
 func (this *MediaServerController) Init(host string, port string) {
 	this.host = host
 	this.port = port
-	this.listener, _ = net.Listen("tcp", this.host + ":" + this.port)
+	this.listener, _ = net.Listen("tcp", ":" + this.port)
 }
 
 func (this *MediaServerController) Start() {
@@ -29,7 +29,7 @@ func (this *MediaServerController) Start() {
 }
 
 func handleRequest(connection net.Conn) {
-	fmt.Println(connection.LocalAddr().String())
+	fmt.Println(connection.RemoteAddr().String())
 	ms := new(MediaServer)
 	ms.connectUser = connection
 	ms.Start()

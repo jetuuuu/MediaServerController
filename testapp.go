@@ -6,6 +6,7 @@ import (
 
 func main() {
 	msc := new(controller.MediaServerController)
-	msc.Init("localhost", "5000")
+	host := "192.168.0.101"
+	msc.Init(host, "5000")
 	msc.Start()
 }
