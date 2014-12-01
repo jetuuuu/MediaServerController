@@ -29,7 +29,7 @@ func (this *MediaServerController) Start() {
 }
 
 func handleRequest(connection net.Conn) {
-	fmt.Println(connection.RemoteAddr().String())
+	fmt.Println("Connect from: ", connection.RemoteAddr().String())
 	ms := new(MediaServer)
 	ms.connectUser = connection
 	ms.Start()

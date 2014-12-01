@@ -1,0 +1,143 @@
+package mediaserver;
+
+message Attribute {
+    required string name = 1;
+    required string value = 2;
+}
+
+message Codec {
+    required string id = 1;
+    required string name = 2;
+    optional string format = 3;
+}
+
+message Media {
+        enum MediaType {
+            Audio = 1;
+            Video = 2;
+        }
+        required MediaType media = 1 [default = Audio];
+        required string ip = 2;
+
+        enum MediaProtocol {
+            RTP_AVP = 1;
+            RTP_SAVP = 2;
+            RTP_AVPF = 3;
+            RTP_SAVPF = 4;
+        }
+        required MediaProtocol protocol = 3;
+
+        enum MediaDirection {
+            Sendrecv = 1;
+            Recvonly = 2;
+            Sendonly = 3;
+            Inactive = 4;
+        }
+        optional MediaDirection direction = 4 [default = Sendrecv];
+
+        repeated Attribute attrList = 5;
+        repeated Codec codecList = 6;
+    }
+
+message Sdp {
+    optional string sessionID = 1;
+    optional string sessionVersion = 2;
+    optional string ip = 3;
+    optional string origIP = 4;
+
+    repeated Attribute attrList = 5;
+    repeated Media mediaList = 6;
+}
+
+message MediaServerUDPAddr {
+    required fixed32 ip = 1;
+    required uint32 port = 2;
+}
+
+message MediaServerObject {
+    required uint32 mg = 1;
+    required uint32 id = 2;
+}
+
+message MediaServerReceiver {
+    required MediaServerObject obj = 1;
+    required MediaServerUDPAddr addr = 2;
+}
+
+message MediaServerParam {
+    optional MediaServerObject obj = 1;
+    optional MediaServerReceiver recv = 2;
+    optional string str = 3;
+    optional Codec codec = 4;
+}
+
+message MediaServerReq {
+    enum CommandType {
+        CreateEndPoint = 1;
+        GetEndPointMedia = 2;
+        UpdateEndPointMedia = 3;
+        SendDTMF = 4;
+
+        SetReceiver = 5;
+        ResetReceiver = 6;
+
+        DestroyObject = 7;
+
+        CreatePlayer = 8;
+
+        CreateRecorder = 9;
+
+        CreateTranscoder = 10;
+
+        CreateSRTP = 11;
+
+        CreateMixer = 12;
+        AttachToMixer = 13;
+        DetachFromMixer = 14;
+
+        CreateSimpleMixer = 15;
+        AttachStreamToSimpleMixer = 16;
+        DetachStreamFromSimpleMixer = 17;
+
+        CreateEmptyObject = 18;
+        CreateVideoMix = 19;
+        AttachEndPoint = 20;
+        DettachEndPoint = 21;
+    }
+    required CommandType command = 1;
+    optional MediaServerObject obj = 2;
+    optional Media media = 3;
+    repeated MediaServerParam params = 4;
+}
+
+message MediaServerRep {
+    enum Result {
+        OK = 200;
+        NotFound = 404;
+        InternalServerError = 500;
+        NotImplemented = 501;
+    }
+    required Result res = 1;
+    optional MediaServerObject obj = 2;
+    optional Media media = 3;
+    optional string description = 4;
+}
+
+message MediaServerMsg {
+    optional uint32 mg = 1;
+    optional fixed32 ip = 2;
+    optional uint32 tcpClusterPort = 3;
+    optional uint32 udpClusterPort = 4;
+
+    optional uint32 numObjects = 5;
+    optional uint32 cpuUsage = 6;
+
+    optional MediaServerObject obj = 7;
+    optional uint32 dtmf = 8;
+}
+
+message MediaServerFrontendMsg {
+    optional MediaServerObject receiver = 1;
+    optional MediaServerObject stream = 2;
+    optional bytes data = 3;
+}
