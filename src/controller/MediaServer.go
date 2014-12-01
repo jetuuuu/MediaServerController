@@ -30,7 +30,8 @@ func (this *MediaServer) Start() {
 	if err != nil {
 		return
 	}
-	//go this.waitClose()
+	
+	//go this.checkServerAlive() check user connect
 
 	response := this.createVideoMix()
 	if response == nil {
@@ -64,12 +65,14 @@ func (this *MediaServer) Start() {
 	//this.connectServer.Close()
 }
 
-func (this *MediaServer) waitClose() {
+
+func (this *MediaServer) checkServerAlive(sock *net.UDPConn) {
+	buff := make([]byte, BUFFSIZE)
 	for {
-		_, err := this.connectUser.Write([]byte("~"))
+		_, err := sock.Read(buff)
 		if err != nil {
-			this.connectUser.Close()
-			this.detachEndPoint()
+			fmt.Println("Connection faild", err)
+			//закрыть все соединения и выйти ?!
 			break
 		}
 		time.Sleep(time.Second)
@@ -97,36 +100,25 @@ func (this *MediaServer) setReceiver() {
 
 func (this *MediaServer) connectToServer(port string) error {
 
-	var buf [1024]byte
+	var buf [BUFFSIZE]byte
 	addr, _ := net.ResolveUDPAddr("udp", ":4000")
 	sock, _ := net.ListenUDP("udp", addr)
 	rlen, remote, _ := sock.ReadFromUDP(buf[:])
 	fmt.Println("Connect from:", remote)
 	fmt.Println(rlen, remote)
 	sock.Close()
-	//ipPort := string(buf[:rlen])
-	connect, err := net.Dial("tcp", remote.IP.String() + ":43510")
-	fmt.Println("-----")
+	ipPort := string(buf[:rlen])
+	//remote.IP.String() + ":" + port
+	connect, err := net.Dial("tcp", ipPort)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	this.connectServer = connect
-	//go checkServerConnection(connection)
+
+	go this.checkServerAlive(sock)
 
 	return nil
-}
-
-func checkServerConnection(connect net.Conn) {
-	for {
-		buff := make([]byte, BUFFSIZE)
-		_, err := connect.Read(buff)
-		if err != nil {
-			fmt.Println(err)
-			//закрыть все соединения и выйти ?!
-			break
-		}
-	}
 }
 
 func (this *MediaServer) getEndPointMedia() *mediaserver.Media {
