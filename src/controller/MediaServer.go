@@ -77,6 +77,7 @@ func (this *MediaServer) checkServerAlive(sock *net.UDPConn) {
 		}
 		time.Sleep(time.Second)
 	}
+	sock.Close()
 }
 
 func (this *MediaServer) detachEndPoint() {
@@ -106,10 +107,11 @@ func (this *MediaServer) connectToServer(port string) error {
 	rlen, remote, _ := sock.ReadFromUDP(buf[:])
 	fmt.Println("Connect from:", remote)
 	fmt.Println(rlen, remote)
-	sock.Close()
-	ipPort := string(buf[:rlen])
+	//sock.Close()
+	//ipPort := string(buf[:rlen])
+	//fmt.Println(ipPort)
 	//remote.IP.String() + ":" + port
-	connect, err := net.Dial("tcp", ipPort)
+	connect, err := net.Dial("tcp", "192.168.0.106:37069")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
